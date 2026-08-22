@@ -1,13 +1,81 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { STATUSES, statusMeta } from "@/lib/constants";
-import { BUCKET } from "@/lib/upload";
+
+import { adminBucket, adminDb } from "@/lib/firebase/admin";
+import { COL, toPlain } from "@/lib/firebase/data";
+import { ownsGym } from "@/lib/firebase/owner";
+import { STATUSES, formatRef, statusMeta } from "@/lib/constants";
+import { currentUid } from "../../login/actions";
 import { updateApplication } from "../actions";
 
 export const metadata = { title: "Application detail" };
+export const dynamic = "force-dynamic";
+
+const GYM_ID = process.env.NEXT_PUBLIC_GYM_ID ?? "";
+const SIGNED_URL_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 type PrevGym = { gym?: string; role?: string; from?: string; to?: string };
+
+type Application = {
+  id: string;
+  ref_no?: number;
+  gym_id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  gender: string | null;
+  dob: string | null;
+  city: string;
+  address: string | null;
+  languages?: string[];
+  photo_path: string | null;
+  experience_years: number;
+  specializations?: string[];
+  certifications?: string[];
+  certificate_paths?: string[];
+  resume_path: string | null;
+  previous_gyms?: PrevGym[];
+  job_type: string | null;
+  preferred_shift: string | null;
+  expected_salary_min: number | null;
+  expected_salary_max: number | null;
+  available_from: string | null;
+  available_timings?: string[];
+  willing_to_relocate: boolean;
+  bio: string | null;
+  instagram_url: string | null;
+  youtube_url: string | null;
+  reference_contact: string | null;
+  status: string;
+  owner_notes: string | null;
+};
+
+type HistoryRow = { from_status?: string; to_status?: string; changed_at?: string };
+
+/**
+ * The bucket is private, so hand out short-lived signed links instead of paths.
+ * One bad path must not take the whole page down — failures resolve to undefined.
+ */
+async function signPaths(paths: string[]): Promise<Map<string, string>> {
+  if (paths.length === 0) return new Map();
+
+  const bucket = adminBucket();
+  const expires = Date.now() + SIGNED_URL_TTL_MS;
+
+  const entries = await Promise.all(
+    paths.map(async (path) => {
+      try {
+        const [url] = await bucket.file(path).getSignedUrl({ action: "read", expires });
+        return [path, url] as const;
+      } catch (e) {
+        console.error("[signPaths]", path, e);
+        return null;
+      }
+    }),
+  );
+
+  return new Map(entries.filter((e): e is readonly [string, string] => e !== null));
+}
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   if (value === null || value === undefined || value === "") return null;
@@ -34,38 +102,40 @@ export default async function ApplicationDetail({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
 
-  const { data: app } = await supabase
-    .from("trainer_applications")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  const uid = await currentUid();
+  if (!(await ownsGym(uid, GYM_ID))) notFound();
 
-  if (!app) notFound();
+  const db = adminDb();
+  const snap = await db.collection(COL.applications).doc(id).get();
+  if (!snap.exists) notFound();
 
-  const { data: history } = await supabase
-    .from("application_status_history")
-    .select("from_status, to_status, changed_at")
-    .eq("application_id", id)
-    .order("changed_at", { ascending: false });
+  const app = { ...toPlain(snap.data()!), id: snap.id } as Application;
 
-  // Private bucket — hand out short-lived signed links.
+  // Belt and braces: the id comes from the URL, so confirm the row is this gym's.
+  if (app.gym_id !== GYM_ID) notFound();
+
+  const historySnap = await snap.ref
+    .collection(COL.statusHistory)
+    .orderBy("changed_at", "desc")
+    .get()
+    .catch(() => null);
+
+  const history: HistoryRow[] =
+    historySnap?.docs.map((d) => toPlain<HistoryRow>(d.data())) ?? [];
+
+  const certPaths = app.certificate_paths ?? [];
   const docPaths: string[] = [
     ...(app.photo_path ? [app.photo_path] : []),
     ...(app.resume_path ? [app.resume_path] : []),
-    ...((app.certificate_paths as string[] | null) ?? []),
+    ...certPaths,
   ];
-  const { data: signed } = docPaths.length
-    ? await supabase.storage.from(BUCKET).createSignedUrls(docPaths, 3600)
-    : { data: [] };
 
-  const urlOf = (path?: string | null): string | undefined =>
-    (path ? signed?.find((s) => s.path === path)?.signedUrl : undefined) ?? undefined;
+  const signed = await signPaths(docPaths);
+  const urlOf = (path?: string | null) => (path ? signed.get(path) : undefined);
 
   const meta = statusMeta(app.status);
-  const prevGyms = (app.previous_gyms as PrevGym[] | null) ?? [];
-  const certPaths = (app.certificate_paths as string[] | null) ?? [];
+  const prevGyms = app.previous_gyms ?? [];
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
@@ -87,6 +157,7 @@ export default async function ApplicationDetail({
             />
           )}
           <div>
+            <p className="font-mono text-sm text-brand">{formatRef(app.ref_no)}</p>
             <h1 className="display text-4xl">{app.full_name}</h1>
             <p className="mt-1 text-sm text-muted">
               {app.city} · {app.experience_years} yrs experience
@@ -149,6 +220,7 @@ export default async function ApplicationDetail({
                     : ""
                 }
               />
+              <Row label="Available timings" value={(app.available_timings ?? []).join(", ")} />
               <Row label="Available from" value={app.available_from} />
               <Row label="Relocate?" value={app.willing_to_relocate ? "Yes" : "No"} />
               <Row label="Bio" value={app.bio} />
@@ -243,14 +315,14 @@ export default async function ApplicationDetail({
             </Panel>
           )}
 
-          {(history?.length ?? 0) > 0 && (
+          {history.length > 0 && (
             <Panel title="History">
               <ul className="space-y-2 text-sm">
-                {history?.map((h, i) => (
+                {history.map((h, i) => (
                   <li key={i} className="border-l border-line pl-3 text-muted">
                     {h.from_status} → <span className="text-foreground">{h.to_status}</span>
                     <span className="block text-xs">
-                      {new Date(h.changed_at).toLocaleString("en-IN")}
+                      {h.changed_at ? new Date(h.changed_at).toLocaleString("en-IN") : ""}
                     </span>
                   </li>
                 ))}

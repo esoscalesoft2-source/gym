@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, type DefaultValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { submitApplication } from "./actions";
 
 import {
+  AVAILABLE_TIMINGS,
   CERTIFICATIONS,
   GENDERS,
   JOB_TYPES,
@@ -22,8 +23,8 @@ import {
   type ApplicationInput,
   type ApplicationValues,
 } from "@/lib/validation";
-import { createClient } from "@/lib/supabase/client";
 import { checkFile, uploadFile } from "@/lib/upload";
+import { uploadsEnabled } from "@/lib/firebase/config";
 import {
   CheckboxCard,
   ChipGroup,
@@ -33,7 +34,7 @@ import {
   inputClass,
 } from "@/components/form-fields";
 
-const STEPS = ["Unga vivaram", "Experience", "Job preference", "Kadaisi step"];
+const STEPS = ["Your details", "Experience", "Job preference", "Last step"];
 
 const defaults: DefaultValues<ApplicationInput> = {
   full_name: "",
@@ -53,6 +54,7 @@ const defaults: DefaultValues<ApplicationInput> = {
   expected_salary_min: "",
   expected_salary_max: "",
   available_from: "",
+  available_timings: [],
   willing_to_relocate: false,
   bio: "",
   instagram_url: "",
@@ -100,7 +102,7 @@ export default function ApplyForm() {
     const { expected_salary_min: min, expected_salary_max: max } = getValues();
     if (min && max && Number(min) > Number(max)) {
       setError("expected_salary_max", {
-        message: "Min salary, max salary vida periyasa irukku",
+        message: "Minimum salary is higher than the maximum",
       });
       return false;
     }
@@ -138,16 +140,23 @@ export default function ApplyForm() {
     setter(slice);
   };
 
+  // Warm the success route while the applicant is still on the last step, so the
+  // submit button is not left spinning through a first-visit compile in dev.
+  useEffect(() => {
+    if (step === STEPS.length - 1) router.prefetch("/apply/success");
+  }, [step, router]);
+
   const onSubmit = async (values: ApplicationValues) => {
     setServerError(null);
     setBusy(true);
     try {
-      const supabase = createClient();
-      const [photo_path, resume_path, certificate_paths] = await Promise.all([
-        photo[0] ? uploadFile(supabase, photo[0], "photos") : Promise.resolve(""),
-        resume[0] ? uploadFile(supabase, resume[0], "resumes") : Promise.resolve(""),
-        Promise.all(certs.map((f) => uploadFile(supabase, f, "certificates"))),
-      ]);
+      const [photo_path, resume_path, certificate_paths] = uploadsEnabled
+        ? await Promise.all([
+            photo[0] ? uploadFile(photo[0], "photos") : Promise.resolve(""),
+            resume[0] ? uploadFile(resume[0], "resumes") : Promise.resolve(""),
+            Promise.all(certs.map((f) => uploadFile(f, "certificates"))),
+          ])
+        : ["", "", [] as string[]];
 
       const res = await submitApplication(values, {
         photo_path,
@@ -155,10 +164,10 @@ export default function ApplyForm() {
         certificate_paths,
       });
 
-      if (res.ok) router.push("/apply/success");
+      if (res.ok) router.push(`/apply/success?ref=${res.ref}`);
       else setServerError(res.message);
     } catch (e) {
-      setServerError(e instanceof Error ? e.message : "Ethuvo thappa poyiduchu.");
+      setServerError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setBusy(false);
     }
@@ -192,7 +201,7 @@ export default function ApplyForm() {
           <Field
             label="Mobile number"
             required
-            hint="Idhukku thaan naanga call / WhatsApp pannuvom"
+            hint="This is the number we call or WhatsApp you on"
             error={errors.phone?.message}
           >
             <input
@@ -263,7 +272,7 @@ export default function ApplyForm() {
           <Field
             label="Years of experience"
             required
-            hint="Fresher-na 0 nu podunga"
+            hint="Enter 0 if you are a fresher"
             error={errors.experience_years?.message}
           >
             <input
@@ -304,7 +313,7 @@ export default function ApplyForm() {
 
           <div>
             <span className="eyebrow mb-2 block text-xs text-muted">
-              Munnadi velai paartha gyms
+              Gyms you have worked at
             </span>
             <div className="space-y-3">
               {gyms.fields.map((f, i) => (
@@ -406,12 +415,30 @@ export default function ApplyForm() {
             </Field>
           </div>
 
+          <Field
+            label="Available timings"
+            hint="Select every slot you can take"
+            error={errors.available_timings?.message}
+          >
+            <Controller
+              control={control}
+              name="available_timings"
+              render={({ field }) => (
+                <ChipGroup
+                  options={AVAILABLE_TIMINGS}
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+          </Field>
+
           <Field label="Available from" error={errors.available_from?.message}>
             <input {...register("available_from")} type="date" className={inputClass} />
           </Field>
 
           <CheckboxCard {...register("willing_to_relocate")}>
-            Vera oorukku relocate panna ready
+            Ready to relocate to another city
           </CheckboxCard>
         </div>
       )}
@@ -421,12 +448,21 @@ export default function ApplyForm() {
         <div className="space-y-5">
           <Field
             label="Short bio"
-            hint="Ungala patthi 2 line — training style, achievement ethuvum"
+            hint="Two lines about you — training style, achievements, anything"
             error={errors.bio?.message}
           >
             <textarea {...register("bio")} rows={4} className={inputClass} />
           </Field>
 
+          {!uploadsEnabled && (
+            <p className="border border-line bg-surface p-3 text-xs text-muted">
+              File uploads are turned off for now — send your photo, resume and
+              certificates over WhatsApp after we call you.
+            </p>
+          )}
+
+          {uploadsEnabled && (
+            <>
           <Field label="Photo" error={undefined}>
             <FileInput
               accept="image/*"
@@ -441,7 +477,7 @@ export default function ApplyForm() {
               accept="application/pdf,image/*"
               files={resume}
               onFiles={pickFiles("doc", setResume, 1)}
-              hint="Optional · resume illaatiyum apply pannalaam"
+              hint="Optional · you can apply without a resume"
             />
           </Field>
 
@@ -454,6 +490,9 @@ export default function ApplyForm() {
               hint={`Optional · max ${MAX_CERTIFICATES} files`}
             />
           </Field>
+
+            </>
+          )}
 
           <Field label="Instagram link" error={errors.instagram_url?.message}>
             <input
@@ -473,7 +512,7 @@ export default function ApplyForm() {
 
           <Field
             label="Reference"
-            hint="Yaaravadhu reference irundha peru + number"
+            hint="If you have a reference, add their name and number"
             error={errors.reference_contact?.message}
           >
             <input {...register("reference_contact")} className={inputClass} />
@@ -481,7 +520,7 @@ export default function ApplyForm() {
 
           <div>
             <CheckboxCard {...register("consent")}>
-              Naan koduthirukra vivarangal ellaam unmai. Gym-la irundhu enna contact pannalaam.
+              Everything I have entered is true. The gym may contact me about this application.
             </CheckboxCard>
             {errors.consent && (
               <span className="mt-1.5 block text-xs font-medium text-rose-400">
@@ -530,7 +569,7 @@ export default function ApplyForm() {
               disabled={busy}
               className="display flex-1 bg-brand px-5 py-3.5 text-lg text-brand-ink transition hover:brightness-110 disabled:opacity-60"
             >
-              {busy ? "Anupparen..." : "Submit application"}
+              {busy ? "Sending..." : "Submit application"}
             </button>
           )}
         </div>

@@ -1,9 +1,13 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { FieldValue } from "firebase-admin/firestore";
+
+import { adminDb } from "@/lib/firebase/admin";
+import { firebaseAdminConfigured } from "@/lib/firebase/config";
+import { COL, phoneLockId } from "@/lib/firebase/data";
 import { applicationSchema, uploadPathsSchema } from "@/lib/validation";
 
-export type SubmitResult = { ok: true } | { ok: false; message: string };
+export type SubmitResult = { ok: true; ref: number } | { ok: false; message: string };
 
 const emptyToNull = (v: string) => (v.trim() === "" ? null : v.trim());
 const numOrNull = (v: string) => (v.trim() === "" ? null : Number(v));
@@ -13,33 +17,42 @@ export async function submitApplication(raw: unknown, rawPaths: unknown): Promis
   if (!gymId) {
     return { ok: false, message: "Site setup incomplete — NEXT_PUBLIC_GYM_ID missing." };
   }
+  if (!firebaseAdminConfigured) {
+    return { ok: false, message: "Site setup incomplete — Firebase keys missing." };
+  }
 
   // Never trust the client: re-run the exact same schema on the server.
   const parsed = applicationSchema.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, message: "Form-la ethuvo thappa irukku. Thirumba check pannunga." };
+    return { ok: false, message: "Something in the form is not valid. Please check and try again." };
   }
   const paths = uploadPathsSchema.safeParse(rawPaths);
   if (!paths.success) {
-    return { ok: false, message: "File upload fail aayiduchu. Thirumba try pannunga." };
+    return { ok: false, message: "File upload failed. Please try again." };
   }
 
   const d = parsed.data;
-  const supabase = await createClient();
+  const db = adminDb();
 
   // Attach the currently open job post, if the gym has one.
-  const { data: post } = await supabase
-    .from("job_posts")
-    .select("id")
-    .eq("gym_id", gymId)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  let jobPostId: string | null = null;
+  try {
+    const post = await db
+      .collection(COL.jobPosts)
+      .where("gym_id", "==", gymId)
+      .where("is_active", "==", true)
+      .orderBy("created_at", "desc")
+      .limit(1)
+      .get();
+    jobPostId = post.empty ? null : post.docs[0].id;
+  } catch {
+    // No job_posts collection or no index yet — an application without a post is fine.
+    jobPostId = null;
+  }
 
-  const { error } = await supabase.from("trainer_applications").insert({
+  const doc = {
     gym_id: gymId,
-    job_post_id: post?.id ?? null,
+    job_post_id: jobPostId,
 
     full_name: d.full_name,
     gender: emptyToNull(d.gender),
@@ -47,6 +60,8 @@ export async function submitApplication(raw: unknown, rawPaths: unknown): Promis
     phone: d.phone,
     email: emptyToNull(d.email),
     city: d.city,
+    // Lower-cased copy so the dashboard can filter by city without a case-sensitive match.
+    city_lower: d.city.trim().toLowerCase(),
     address: emptyToNull(d.address),
     languages: d.languages,
     photo_path: emptyToNull(paths.data.photo_path),
@@ -63,6 +78,7 @@ export async function submitApplication(raw: unknown, rawPaths: unknown): Promis
     expected_salary_min: numOrNull(d.expected_salary_min),
     expected_salary_max: numOrNull(d.expected_salary_max),
     available_from: emptyToNull(d.available_from),
+    available_timings: d.available_timings,
     willing_to_relocate: d.willing_to_relocate,
 
     bio: emptyToNull(d.bio),
@@ -71,19 +87,49 @@ export async function submitApplication(raw: unknown, rawPaths: unknown): Promis
     reference_contact: emptyToNull(d.reference_contact),
 
     status: "new",
-  });
+    owner_notes: null,
+    created_at: FieldValue.serverTimestamp(),
+  };
 
-  if (error) {
-    // 23505 = the (gym_id, phone) unique index — same number already applied.
-    if (error.code === "23505") {
+  const appRef = db.collection(COL.applications).doc();
+  const lockRef = db.collection(COL.phoneLocks).doc(phoneLockId(gymId, d.phone));
+  const gymRef = db.collection("gyms").doc(gymId);
+
+  let refNo: number;
+
+  try {
+    // Firestore has no unique index, so a lock document stands in for the old
+    // (gym_id, phone) constraint. The transaction makes the check-then-write atomic.
+    refNo = await db.runTransaction(async (tx) => {
+      // Every read must happen before the first write in a Firestore transaction.
+      const [lock, gym] = await Promise.all([tx.get(lockRef), tx.get(gymRef)]);
+      if (lock.exists) throw new Error("DUPLICATE_PHONE");
+
+      // Running number per gym. Kept in the transaction so two people applying at
+      // the same moment can never be handed the same one.
+      const next = Number(gym.get("application_seq") ?? 0) + 1;
+      tx.set(gymRef, { application_seq: next }, { merge: true });
+
+      tx.create(appRef, { ...doc, ref_no: next });
+      tx.create(lockRef, {
+        gym_id: gymId,
+        phone: d.phone,
+        application_id: appRef.id,
+        created_at: FieldValue.serverTimestamp(),
+      });
+
+      return next;
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "DUPLICATE_PHONE") {
       return {
         ok: false,
-        message: "Indha number vechu already apply pannirukeenga. Naanga call pannuvom!",
+        message: "You have already applied with this number. We will call you!",
       };
     }
-    console.error("[submitApplication]", error);
-    return { ok: false, message: "Save panna mudiyala. Konja neram kazhichu try pannunga." };
+    console.error("[submitApplication]", e);
+    return { ok: false, message: "Could not save your application. Please try again in a moment." };
   }
 
-  return { ok: true };
+  return { ok: true, ref: refNo };
 }

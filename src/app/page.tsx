@@ -2,7 +2,6 @@ import Link from "next/link";
 import { SPECIALIZATIONS } from "@/lib/constants";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 
-const gymName = process.env.NEXT_PUBLIC_GYM_NAME || "Our Gym";
 const gymCity = process.env.NEXT_PUBLIC_GYM_CITY || "";
 
 const STEPS = [
@@ -43,48 +42,32 @@ export default function Home() {
             className="absolute inset-0 opacity-[0.12] [background-image:repeating-linear-gradient(115deg,#cfff00_0px,#cfff00_1px,transparent_1px,transparent_14px)]"
           />
 
-          <div className="relative mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:py-24 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-28">
-            <div>
-              <p className="eyebrow text-sm text-brand">
-                {gymCity ? `${gymCity} · ` : ""}Now recruiting
-              </p>
+          <div className="relative mx-auto max-w-3xl px-5 py-20 sm:py-28 lg:py-36">
+            <p className="eyebrow text-sm text-brand">
+              {gymCity ? `${gymCity} · ` : ""}Now recruiting
+            </p>
 
-              <h1 className="display mt-3 text-5xl sm:text-6xl lg:text-7xl">
-                We are hiring
-                <br />
-                <span className="text-brand">gym trainers</span>
-              </h1>
+            <h1 className="display mt-3 text-5xl sm:text-7xl lg:text-8xl">
+              We are hiring
+              <br />
+              <span className="text-brand">gym trainers</span>
+            </h1>
 
-              <p className="mt-5 max-w-md text-base leading-relaxed text-muted">
-                Certified trainer-a irundha, kizhe irukra form-a fill pannunga. 2 nimisham
-                podhum — resume illaatiyum apply pannalaam. Shortlist aana udane call
-                pannuvom.
-              </p>
+            <p className="mt-6 max-w-lg text-base leading-relaxed text-muted sm:text-lg">
+              Certified trainers, fill in the form below. It takes two minutes and you can
+              apply without a resume. We call you as soon as you are shortlisted.
+            </p>
 
-              <Link
-                href="/apply"
-                className="display mt-8 inline-flex w-full items-center justify-center gap-2 bg-brand px-8 py-4 text-xl text-brand-ink transition hover:brightness-110 sm:w-auto"
-              >
-                Apply as a trainer <span aria-hidden>→</span>
-              </Link>
-            </div>
+            <Link
+              href="/apply"
+              className="display mt-9 inline-flex w-full items-center justify-center gap-2 bg-brand px-8 py-4 text-xl text-brand-ink transition hover:brightness-110 sm:w-auto"
+            >
+              Apply as a trainer <span aria-hidden>→</span>
+            </Link>
 
-            {/* Desktop-only visual slab */}
-            <div className="hidden lg:block">
-              <div className="relative aspect-[4/5] border border-line bg-surface">
-                <div
-                  aria-hidden
-                  className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_20%,#242424_0%,#101010_100%)]"
-                />
-                <div className="absolute inset-x-0 bottom-0 border-t border-line bg-background/80 p-6 backdrop-blur">
-                  <p className="eyebrow text-xs text-brand">{gymName}</p>
-                  <p className="display mt-1 text-3xl">Built for coaches</p>
-                  <p className="mt-2 text-sm text-muted">
-                    Full time · Part time · Freelance roles open.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <p className="mt-5 text-sm text-muted">
+              Full time · Part time · Freelance roles open.
+            </p>
           </div>
         </section>
 
@@ -143,7 +126,7 @@ export default function Home() {
           <div className="border border-line bg-surface p-8 text-center sm:p-12">
             <h2 className="display text-3xl sm:text-4xl">Ready to coach with us?</h2>
             <p className="mx-auto mt-3 max-w-md text-sm text-muted">
-              Applications-a 2-3 working days-ku ulla review panni, phone-la contact pannuvom.
+              We review every application within 2-3 working days and call you on the phone.
             </p>
             <Link
               href="/apply"

@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// ---------------------------------------------------------------------------
+// These rules replace Supabase's row level security.
+//
+// IMPORTANT: the Firebase Admin SDK (everything under src/lib/firebase/admin.ts)
+// bypasses this file completely. These rules exist to lock down the project for
+// any *client* SDK access — direct browser calls, a future mobile app, someone
+// poking at the REST API with the public web key. Server-side authorisation is
+// enforced separately in src/lib/firebase/owner.ts.
+// ---------------------------------------------------------------------------
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsGym(gymId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/gyms/$(gymId))
+        && request.auth.uid in get(/databases/$(database)/documents/gyms/$(gymId)).data.owner_uids;
+    }
+
+    // Gym profile — owners read their own, nobody writes from a client.
+    match /gyms/{gymId} {
+      allow read: if ownsGym(gymId);
+      allow write: if false;
+    }
+
+    // Applications are written by the server action, never by the browser.
+    // Owners may read the applications belonging to a gym they own.
+    match /applications/{applicationId} {
+      allow read: if ownsGym(resource.data.gym_id);
+      allow create, update, delete: if false;
+
+      match /status_history/{historyId} {
+        allow read: if ownsGym(
+          get(/databases/$(database)/documents/applications/$(applicationId)).data.gym_id
+        );
+        allow write: if false;
+      }
+    }
+
+    // Duplicate-phone guard. Server-side only — reading it would leak phone numbers.
+    match /phone_locks/{lockId} {
+      allow read, write: if false;
+    }
+
+    // Job posts are public so a future careers page can list them.
+    match /job_posts/{postId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Anything not named above is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

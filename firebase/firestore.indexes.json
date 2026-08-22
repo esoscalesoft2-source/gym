@@ -1,0 +1,24 @@
+{
+  "indexes": [
+    {
+      "//": "Dashboard list: newest applications for one gym.",
+      "collectionGroup": "applications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "gym_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "Apply action: the gym's most recent active job post.",
+      "collectionGroup": "job_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "gym_id", "order": "ASCENDING" },
+        { "fieldPath": "is_active", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

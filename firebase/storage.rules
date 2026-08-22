@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// ---------------------------------------------------------------------------
+// Applicants are anonymous — they never sign in — so the browser must be able to
+// upload without auth. It must NOT be able to read anything back: the dashboard
+// reads through the Admin SDK with short-lived signed URLs instead.
+//
+// Mirrors the old Supabase setup: a private bucket with an insert-only policy.
+// ---------------------------------------------------------------------------
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /trainer-docs/{folder}/{fileName} {
+      // Write-once: create is allowed, overwriting an existing object is not.
+      allow create: if request.resource != null
+        && resource == null
+        && request.resource.size < 5 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/jpeg')
+          || request.resource.contentType.matches('image/png')
+          || request.resource.contentType.matches('image/webp')
+          || request.resource.contentType.matches('application/pdf')
+        )
+        && folder in ['photos', 'resumes', 'certificates'];
+
+      // Nobody reads or mutates from a client — signed URLs only.
+      allow read, update, delete: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,56 +1,54 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { SESSION_COOKIE, firebaseAdminConfigured } from "@/lib/firebase/config";
+
+/**
+ * Route guard for the owner dashboard.
+ *
+ * In Next 16 this file replaces `middleware.ts` and runs on the Node.js runtime,
+ * so `firebase-admin` works here — it is imported lazily so an unconfigured site
+ * (or a public route) never pays for loading it.
+ */
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
 
   // Before .env.local is filled in, don't crash the whole route — let the page
   // render and show its own "setup incomplete" message.
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return response;
+  if (!firebaseAdminConfigured) return NextResponse.next({ request });
+
+  const cookie = request.cookies.get(SESSION_COOKIE)?.value;
+  let signedIn = false;
+
+  if (cookie) {
+    try {
+      const { adminAuth } = await import("@/lib/firebase/admin");
+      await adminAuth().verifySessionCookie(cookie);
+      signedIn = true;
+    } catch {
+      // Expired, revoked or forged — treat exactly like "not signed in".
+      signedIn = false;
+    }
   }
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
-
-  // Refreshes the auth token and keeps the cookie in sync.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-
-  if (!user && pathname.startsWith("/dashboard")) {
+  if (!signedIn && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+
+    const redirect = NextResponse.redirect(url);
+    // Clear a stale cookie so the browser stops sending it on every request.
+    if (cookie) redirect.cookies.delete(SESSION_COOKIE);
+    return redirect;
   }
 
-  if (user && pathname === "/login") {
+  if (signedIn && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     url.search = "";
     return NextResponse.redirect(url);
   }
 
-  return response;
+  return NextResponse.next({ request });
 }
 
 export const config = {

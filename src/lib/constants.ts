@@ -1,5 +1,6 @@
 // Single source of truth for every dropdown / checkbox list in the app.
-// Values here MUST match the CHECK constraints in supabase/schema.sql.
+// Firestore has no CHECK constraints, so these lists are the only source of truth —
+// they are re-validated on the server in lib/validation.ts and in firestore.rules.
 
 export const SPECIALIZATIONS = [
   "Personal Training",
@@ -24,6 +25,16 @@ export const CERTIFICATIONS = [
   "B.P.Ed / M.P.Ed",
   "Other",
   "No certification",
+] as const;
+
+/** Slots a trainer can take, covering a normal gym day. */
+export const AVAILABLE_TIMINGS = [
+  "5 AM - 8 AM",
+  "8 AM - 11 AM",
+  "11 AM - 2 PM",
+  "2 PM - 5 PM",
+  "5 PM - 8 PM",
+  "8 PM - 11 PM",
 ] as const;
 
 export const LANGUAGES = ["Tamil", "English", "Hindi", "Telugu", "Malayalam", "Kannada"] as const;
@@ -62,6 +73,15 @@ export type StatusValue = (typeof STATUSES)[number]["value"];
 
 export function statusMeta(value: string) {
   return STATUSES.find((s) => s.value === value) ?? STATUSES[0];
+}
+
+/**
+ * Applications get a short per-gym running number so the owner can say
+ * "application 42" on the phone instead of reading out a Firestore id.
+ * Stored as an integer on `ref_no`; this is the only place it gets formatted.
+ */
+export function formatRef(n?: number | null) {
+  return typeof n === "number" ? `#${String(n).padStart(4, "0")}` : "—";
 }
 
 // Upload limits — kept in sync with the storage bucket config in schema.sql
