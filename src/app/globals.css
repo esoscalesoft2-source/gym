@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+/* Placeholder theme — swap these tokens for the Stitch design later.
+   Kept light-only on purpose so the exported design doesn't fight a dark flip. */
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --brand: #ea580c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Prevent iOS from zooming when a form field gets focus */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
