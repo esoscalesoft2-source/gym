@@ -47,11 +47,15 @@ export const SHIFTS = [
 ] as const;
 
 export const STATUSES = [
-  { value: "new", label: "New", tone: "bg-slate-100 text-slate-700 ring-slate-200" },
-  { value: "shortlisted", label: "Shortlisted", tone: "bg-blue-50 text-blue-700 ring-blue-200" },
-  { value: "interview", label: "Interview", tone: "bg-amber-50 text-amber-700 ring-amber-200" },
-  { value: "hired", label: "Hired", tone: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
-  { value: "rejected", label: "Rejected", tone: "bg-rose-50 text-rose-700 ring-rose-200" },
+  { value: "new", label: "New", tone: "bg-white/5 text-foreground ring-line" },
+  { value: "shortlisted", label: "Shortlisted", tone: "bg-sky-500/10 text-sky-300 ring-sky-500/30" },
+  {
+    value: "interview",
+    label: "Interview",
+    tone: "bg-amber-500/10 text-amber-300 ring-amber-500/30",
+  },
+  { value: "hired", label: "Hired", tone: "bg-brand/15 text-brand ring-brand/40" },
+  { value: "rejected", label: "Rejected", tone: "bg-rose-500/10 text-rose-300 ring-rose-500/30" },
 ] as const;
 
 export type StatusValue = (typeof STATUSES)[number]["value"];

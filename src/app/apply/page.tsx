@@ -1,5 +1,5 @@
-import Link from "next/link";
 import ApplyForm from "./ApplyForm";
+import { SiteHeader } from "@/components/site-header";
 
 const gymName = process.env.NEXT_PUBLIC_GYM_NAME || "Our Gym";
 
@@ -7,19 +7,19 @@ export const metadata = { title: `Apply as Trainer — ${gymName}` };
 
 export default function ApplyPage() {
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
-      <Link href="/" className="text-sm text-slate-500 hover:text-slate-800">
-        ← Back
-      </Link>
+    <>
+      <SiteHeader cta={false} />
 
-      <h1 className="mt-4 text-2xl font-bold sm:text-3xl">Trainer application</h1>
-      <p className="mt-1.5 text-sm text-slate-600">
-        {gymName} · Star (<span className="text-brand">*</span>) irukra field mattum mandatory.
-      </p>
+      <main className="mx-auto max-w-2xl px-5 py-10">
+        <h1 className="display text-4xl sm:text-5xl">Trainer application</h1>
+        <p className="mt-2 text-sm text-muted">
+          {gymName} · Star (<span className="text-brand">*</span>) irukra field mattum mandatory.
+        </p>
 
-      <div className="mt-8">
-        <ApplyForm />
-      </div>
-    </main>
+        <div className="mt-9">
+          <ApplyForm />
+        </div>
+      </main>
+    </>
   );
 }

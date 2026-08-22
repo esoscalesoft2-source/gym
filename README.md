@@ -71,10 +71,30 @@ npm run dev
 
 ---
 
+## Theme
+
+"Iron Clan" — dark surfaces + neon lime accent, Barlow Condensed italic caps for headings,
+Inter for body text. Ellaa colour-um [`src/app/globals.css`](src/app/globals.css)-la
+tokens-a irundhu varudhu:
+
+| Token | Value | Enge |
+| --- | --- | --- |
+| `--background` | `#0d0d0d` | page background |
+| `--surface` | `#161616` | cards, inputs |
+| `--surface-2` | `#1e1e1e` | table header, nested fields |
+| `--line` | `#2b2b2b` | ellaa border-um |
+| `--brand` | `#cfff00` | CTA, active chips, accents |
+| `--brand-ink` | `#0d0d0d` | brand background mela varra text |
+
+Re-skin panna andha 6 values-a mattum maathunaa podhum — components-la hardcoded colour illa.
+`.display` (headings) and `.eyebrow` (small caps labels) — rendu utility class-um same file-la.
+
+Ellaa page-um mobile + desktop rendukum responsive: trainer pages `max-w-2xl` centered,
+dashboard `lg:` la table-a maarudhu, mobile-la cards-a irukkum.
+
 ## Enna innum baaki (Phase 1 finish panna)
 
-- [ ] **Stitch design** apply pannanum — `src/app/globals.css`-la `--brand` token + components-oda
-      Tailwind classes-a maathunaa podhum. Logic ellaam thaniya irukku.
+- [ ] Hero-la **real gym photo** podanum — ippo `src/app/page.tsx`-la CSS gradient placeholder irukku.
 - [ ] **Captcha** (Cloudflare Turnstile) `/apply`-la — unique index podhaadhu, bot-ku.
 - [ ] **Email / WhatsApp notification** owner-ku, puthu application vandhaa
       (Supabase Database Webhook → Resend / WhatsApp API).

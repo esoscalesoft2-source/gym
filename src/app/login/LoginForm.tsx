@@ -11,7 +11,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-xl bg-slate-900 px-5 py-3.5 font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+      className="display w-full bg-brand px-5 py-3.5 text-lg text-brand-ink transition hover:brightness-110 disabled:opacity-60"
     >
       {pending ? "Checking..." : "Login"}
     </button>
@@ -26,12 +26,12 @@ export default function LoginForm({ next }: { next: string }) {
       <input type="hidden" name="next" value={next} />
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-slate-700">Email</span>
+        <span className="eyebrow mb-2 block text-xs text-muted">Email</span>
         <input name="email" type="email" autoComplete="email" required className={inputClass} />
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-slate-700">Password</span>
+        <span className="eyebrow mb-2 block text-xs text-muted">Password</span>
         <input
           name="password"
           type="password"
@@ -42,7 +42,9 @@ export default function LoginForm({ next }: { next: string }) {
       </label>
 
       {state.error && (
-        <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{state.error}</p>
+        <p className="border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300">
+          {state.error}
+        </p>
       )}
 
       <SubmitButton />

@@ -1,24 +1,71 @@
 @import "tailwindcss";
 
-/* Placeholder theme — swap these tokens for the Stitch design later.
-   Kept light-only on purpose so the exported design doesn't fight a dark flip. */
+/* ------------------------------------------------------------------
+   "Iron Clan" theme — dark surfaces, neon lime accent.
+   Every colour in the app comes from these tokens; to re-skin the site
+   later, change them here and nothing else.
+   ------------------------------------------------------------------ */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --brand: #ea580c;
+  --background: #0d0d0d;
+  --surface: #161616;
+  --surface-2: #1e1e1e;
+  --line: #2b2b2b;
+  --foreground: #ffffff;
+  --muted: #9b9b9b;
+  --brand: #cfff00;
+  --brand-ink: #0d0d0d; /* text that sits on top of --brand */
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
   --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-display);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Heavy condensed italic caps — the headline voice of the design. */
+.display {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-style: italic;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+}
+
+/* Small lime section label, e.g. "SPECIALTIES NEEDED" */
+.eyebrow {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-style: italic;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+/* Dark form controls: make the native date picker + file button usable */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
 }
 
 /* Prevent iOS from zooming when a form field gets focus */

@@ -24,7 +24,14 @@ import {
 } from "@/lib/validation";
 import { createClient } from "@/lib/supabase/client";
 import { checkFile, uploadFile } from "@/lib/upload";
-import { ChipGroup, Field, FileInput, RadioRow, inputClass } from "@/components/form-fields";
+import {
+  CheckboxCard,
+  ChipGroup,
+  Field,
+  FileInput,
+  RadioRow,
+  inputClass,
+} from "@/components/form-fields";
 
 const STEPS = ["Unga vivaram", "Experience", "Job preference", "Kadaisi step"];
 
@@ -161,15 +168,15 @@ export default function ApplyForm() {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="pb-24">
       {/* progress */}
       <div className="mb-8">
-        <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-          <span>
+        <div className="eyebrow flex items-center justify-between text-xs">
+          <span className="text-brand">
             Step {step + 1} / {STEPS.length}
           </span>
-          <span>{STEPS[step]}</span>
+          <span className="text-muted">{STEPS[step]}</span>
         </div>
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+        <div className="mt-2 h-1 w-full overflow-hidden bg-line">
           <div
-            className="h-full rounded-full bg-brand transition-all duration-300"
+            className="h-full bg-brand transition-all duration-300"
             style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
           />
         </div>
@@ -296,12 +303,12 @@ export default function ApplyForm() {
           </Field>
 
           <div>
-            <span className="mb-2 block text-sm font-medium text-slate-700">
+            <span className="eyebrow mb-2 block text-xs text-muted">
               Munnadi velai paartha gyms
             </span>
             <div className="space-y-3">
               {gyms.fields.map((f, i) => (
-                <div key={f.id} className="rounded-lg bg-white p-3 ring-1 ring-slate-200">
+                <div key={f.id} className="border border-line bg-surface p-3">
                   <div className="grid gap-2 sm:grid-cols-2">
                     <input
                       {...register(`previous_gyms.${i}.gym`)}
@@ -327,7 +334,7 @@ export default function ApplyForm() {
                   <button
                     type="button"
                     onClick={() => gyms.remove(i)}
-                    className="mt-2 text-xs font-medium text-rose-600"
+                    className="eyebrow mt-2 text-xs text-rose-400"
                   >
                     Remove
                   </button>
@@ -338,7 +345,7 @@ export default function ApplyForm() {
               <button
                 type="button"
                 onClick={() => gyms.append({ gym: "", role: "", from: "", to: "" })}
-                className="mt-3 rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-300"
+                className="eyebrow mt-3 border border-line bg-surface px-4 py-2.5 text-xs text-brand transition hover:border-brand"
               >
                 + Add gym
               </button>
@@ -403,14 +410,9 @@ export default function ApplyForm() {
             <input {...register("available_from")} type="date" className={inputClass} />
           </Field>
 
-          <label className="flex items-start gap-3 rounded-lg bg-white p-4 ring-1 ring-slate-200">
-            <input
-              {...register("willing_to_relocate")}
-              type="checkbox"
-              className="mt-0.5 h-5 w-5 accent-orange-600"
-            />
-            <span className="text-sm text-slate-700">Vera oorukku relocate panna ready</span>
-          </label>
+          <CheckboxCard {...register("willing_to_relocate")}>
+            Vera oorukku relocate panna ready
+          </CheckboxCard>
         </div>
       )}
 
@@ -478,41 +480,38 @@ export default function ApplyForm() {
           </Field>
 
           <div>
-            <label className="flex items-start gap-3 rounded-lg bg-white p-4 ring-1 ring-slate-200">
-              <input
-                {...register("consent")}
-                type="checkbox"
-                className="mt-0.5 h-5 w-5 accent-orange-600"
-              />
-              <span className="text-sm text-slate-700">
-                Naan koduthirukra vivarangal ellaam unmai. Gym-la irundhu enna contact pannalaam.
-              </span>
-            </label>
+            <CheckboxCard {...register("consent")}>
+              Naan koduthirukra vivarangal ellaam unmai. Gym-la irundhu enna contact pannalaam.
+            </CheckboxCard>
             {errors.consent && (
-              <span className="mt-1 block text-xs font-medium text-rose-600">
+              <span className="mt-1.5 block text-xs font-medium text-rose-400">
                 {errors.consent.message}
               </span>
             )}
           </div>
 
           {fileError && (
-            <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{fileError}</p>
+            <p className="border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300">
+              {fileError}
+            </p>
           )}
           {serverError && (
-            <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{serverError}</p>
+            <p className="border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300">
+              {serverError}
+            </p>
           )}
         </div>
       )}
 
       {/* ---------------- nav ---------------- */}
-      <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 p-4 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-background/95 p-4 backdrop-blur">
         <div className="mx-auto flex max-w-2xl gap-3">
           {step > 0 && (
             <button
               type="button"
               onClick={back}
               disabled={busy}
-              className="rounded-xl bg-white px-5 py-3.5 font-semibold text-slate-700 ring-1 ring-slate-300 disabled:opacity-50"
+              className="display border border-line bg-surface px-6 py-3.5 text-lg text-muted transition hover:text-foreground disabled:opacity-50"
             >
               Back
             </button>
@@ -521,7 +520,7 @@ export default function ApplyForm() {
             <button
               type="button"
               onClick={next}
-              className="flex-1 rounded-xl bg-brand px-5 py-3.5 font-semibold text-white transition hover:opacity-90"
+              className="display flex-1 bg-brand px-5 py-3.5 text-lg text-brand-ink transition hover:brightness-110"
             >
               Next
             </button>
@@ -529,7 +528,7 @@ export default function ApplyForm() {
             <button
               type="submit"
               disabled={busy}
-              className="flex-1 rounded-xl bg-brand px-5 py-3.5 font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+              className="display flex-1 bg-brand px-5 py-3.5 text-lg text-brand-ink transition hover:brightness-110 disabled:opacity-60"
             >
               {busy ? "Anupparen..." : "Submit application"}
             </button>

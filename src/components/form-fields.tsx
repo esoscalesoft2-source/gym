@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 export const inputClass =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand focus:ring-2 focus:ring-brand/20";
+  "w-full border border-line bg-surface px-3 py-3 text-foreground outline-none transition placeholder:text-muted/60 focus:border-brand focus:ring-1 focus:ring-brand/40";
 
 export function Field({
   label,
@@ -20,13 +20,13 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">
+      <span className="eyebrow mb-2 block text-xs text-muted">
         {label}
         {required && <span className="text-brand"> *</span>}
       </span>
       {children}
-      {hint && !error && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
-      {error && <span className="mt-1 block text-xs font-medium text-rose-600">{error}</span>}
+      {hint && !error && <span className="mt-1.5 block text-xs text-muted">{hint}</span>}
+      {error && <span className="mt-1.5 block text-xs font-medium text-rose-400">{error}</span>}
     </label>
   );
 }
@@ -58,10 +58,10 @@ export function ChipGroup<T extends string>({
               onClick={() => toggle(opt)}
               aria-pressed={active}
               className={
-                "rounded-full px-3.5 py-2 text-sm font-medium transition " +
+                "border px-3.5 py-2 text-xs font-semibold uppercase tracking-wider transition " +
                 (active
-                  ? "bg-brand text-white shadow-sm"
-                  : "bg-white text-slate-700 ring-1 ring-slate-300 hover:ring-slate-400")
+                  ? "border-brand bg-brand text-brand-ink"
+                  : "border-line bg-surface text-muted hover:border-muted hover:text-foreground")
               }
             >
               {opt}
@@ -69,7 +69,7 @@ export function ChipGroup<T extends string>({
           );
         })}
       </div>
-      {error && <span className="mt-1.5 block text-xs font-medium text-rose-600">{error}</span>}
+      {error && <span className="mt-1.5 block text-xs font-medium text-rose-400">{error}</span>}
     </>
   );
 }
@@ -95,10 +95,10 @@ export function RadioRow<T extends string>({
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
           className={
-            "rounded-lg px-4 py-2.5 text-sm font-medium transition " +
+            "border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition " +
             (value === opt.value
-              ? "bg-slate-900 text-white"
-              : "bg-white text-slate-700 ring-1 ring-slate-300 hover:ring-slate-400")
+              ? "border-brand bg-brand text-brand-ink"
+              : "border-line bg-surface text-muted hover:border-muted hover:text-foreground")
           }
         >
           {opt.label}
@@ -128,18 +128,35 @@ export function FileInput({
         accept={accept}
         multiple={multiple}
         onChange={(e) => onFiles(Array.from(e.target.files ?? []))}
-        className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-white hover:file:opacity-90"
+        className="block w-full cursor-pointer border border-line bg-surface text-sm text-muted file:mr-3 file:cursor-pointer file:border-0 file:border-r file:border-line file:bg-surface-2 file:px-4 file:py-3 file:text-xs file:font-semibold file:uppercase file:tracking-wider file:text-brand hover:file:bg-line"
       />
-      {hint && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-xs text-muted">{hint}</span>}
       {files.length > 0 && (
         <ul className="mt-2 space-y-1">
           {files.map((f) => (
-            <li key={f.name} className="text-xs text-slate-600">
-              ✓ {f.name} ({Math.round(f.size / 1024)} KB)
+            <li key={f.name} className="text-xs text-brand">
+              ✓ {f.name} <span className="text-muted">({Math.round(f.size / 1024)} KB)</span>
             </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/** Checkbox styled for the dark theme, used for consent / relocate toggles. */
+export function CheckboxCard({
+  children,
+  ...props
+}: React.ComponentProps<"input"> & { children: ReactNode }) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 border border-line bg-surface p-4 transition hover:border-muted">
+      <input
+        {...props}
+        type="checkbox"
+        className="mt-0.5 h-5 w-5 shrink-0 accent-[#cfff00]"
+      />
+      <span className="text-sm text-muted">{children}</span>
+    </label>
   );
 }
