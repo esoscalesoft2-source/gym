@@ -58,7 +58,9 @@ export function ChipGroup<T extends string>({
               onClick={() => toggle(opt)}
               aria-pressed={active}
               className={
-                "border px-3.5 py-2 text-xs font-semibold uppercase tracking-wider transition " +
+                // min-h-11 keeps the chip at the 44px minimum touch target on phones,
+                // which most applicants use.
+                "inline-flex min-h-11 items-center border px-3.5 py-2 text-xs font-semibold uppercase tracking-wider transition " +
                 (active
                   ? "border-brand bg-brand text-brand-ink"
                   : "border-line bg-surface text-muted hover:border-muted hover:text-foreground")
@@ -95,7 +97,7 @@ export function RadioRow<T extends string>({
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
           className={
-            "border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition " +
+            "inline-flex min-h-11 items-center border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition " +
             (value === opt.value
               ? "border-brand bg-brand text-brand-ink"
               : "border-line bg-surface text-muted hover:border-muted hover:text-foreground")
