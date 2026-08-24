@@ -99,7 +99,15 @@ export const applicationSchema = z
   .refine((d) => !d.certifications.includes("Other") || d.certification_other.trim() !== "", {
     message: "Enter your certification",
     path: ["certification_other"],
-  });
+  })
+  .refine(
+    (d) =>
+      Number(d.experience_years) < 1 || d.previous_gyms.some((g) => g.gym.trim() !== ""),
+    {
+      message: "Add at least one gym you have worked at",
+      path: ["previous_gyms"],
+    },
+  );
 
 export type ApplicationInput = z.input<typeof applicationSchema>;
 export type ApplicationValues = z.output<typeof applicationSchema>;

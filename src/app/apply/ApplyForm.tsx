@@ -92,6 +92,8 @@ export default function ApplyForm() {
 
   const gyms = useFieldArray({ control, name: "previous_gyms" });
   const watchCertifications = useWatch({ control, name: "certifications" });
+  const watchExperience = useWatch({ control, name: "experience_years" });
+  const experienceRequiresGym = Number(watchExperience) >= 1;
 
   /**
    * Cross-field rules live in a top-level zod `.refine()`, which zod skips while any
@@ -101,12 +103,22 @@ export default function ApplyForm() {
    */
   const checkStepExtras = () => {
     if (step === 1) {
-      const { certifications, certification_other } = getValues();
+      const { certifications, certification_other, experience_years, previous_gyms } =
+        getValues();
+
       if (certifications?.includes("Other") && !certification_other?.trim()) {
         setError("certification_other", { message: "Enter your certification" });
         return false;
       }
       clearErrors("certification_other");
+
+      const hasExperience = Number(experience_years) >= 1;
+      const hasAGym = (previous_gyms ?? []).some((g) => g.gym?.trim());
+      if (hasExperience && !hasAGym) {
+        setError("previous_gyms", { message: "Add at least one gym you have worked at" });
+        return false;
+      }
+      clearErrors("previous_gyms");
     }
 
     if (step === 2) {
@@ -342,7 +354,13 @@ export default function ApplyForm() {
           <div>
             <span className="eyebrow mb-2 block text-xs text-muted">
               Gyms you have worked at
+              {experienceRequiresGym && <span className="text-brand"> *</span>}
             </span>
+            {!experienceRequiresGym && (
+              <span className="mb-2 block text-xs text-muted">
+                Optional for freshers
+              </span>
+            )}
             <div className="space-y-3">
               {gyms.fields.map((f, i) => (
                 <div key={f.id} className="border border-line bg-surface p-3">
@@ -386,6 +404,11 @@ export default function ApplyForm() {
               >
                 + Add gym
               </button>
+            )}
+            {!Array.isArray(errors.previous_gyms) && errors.previous_gyms?.message && (
+              <span className="mt-1.5 block text-xs font-medium text-rose-400">
+                {errors.previous_gyms.message}
+              </span>
             )}
           </div>
         </div>
