@@ -68,8 +68,7 @@ export const applicationSchema = z
     // ---- Step 3: job preferences -----------------------------------------
     job_type: optionalEnum(["full_time", "part_time", "freelance"] as const),
     preferred_shift: optionalEnum(["morning", "evening", "both"] as const),
-    expected_salary_min: optionalInt("Salary"),
-    expected_salary_max: optionalInt("Salary"),
+    expected_salary: optionalInt("Salary"),
     available_from: optionalText(10),
     available_timings: z.array(z.enum(AVAILABLE_TIMINGS)).default([]),
     willing_to_relocate: z.boolean().default(false),
@@ -89,13 +88,6 @@ export const applicationSchema = z
     reference_contact: optionalText(120),
     consent: z.literal(true, { message: "Please accept the terms" }),
   })
-  .refine(
-    (d) =>
-      d.expected_salary_min === "" ||
-      d.expected_salary_max === "" ||
-      Number(d.expected_salary_min) <= Number(d.expected_salary_max),
-    { message: "Minimum salary is higher than the maximum", path: ["expected_salary_max"] },
-  )
   .refine((d) => !d.certifications.includes("Other") || d.certification_other.trim() !== "", {
     message: "Enter your certification",
     path: ["certification_other"],
@@ -128,8 +120,7 @@ export const STEP_FIELDS = [
   [
     "job_type",
     "preferred_shift",
-    "expected_salary_min",
-    "expected_salary_max",
+    "expected_salary",
     "available_from",
     "available_timings",
     "willing_to_relocate",

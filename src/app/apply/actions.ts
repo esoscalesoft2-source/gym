@@ -88,8 +88,7 @@ export async function submitApplication(raw: unknown, rawPaths: unknown): Promis
 
       job_type: emptyToNull(d.job_type),
       preferred_shift: emptyToNull(d.preferred_shift),
-      expected_salary_min: numOrNull(d.expected_salary_min),
-      expected_salary_max: numOrNull(d.expected_salary_max),
+      expected_salary: numOrNull(d.expected_salary),
       available_from: emptyToNull(d.available_from),
       available_timings: d.available_timings,
       willing_to_relocate: d.willing_to_relocate,

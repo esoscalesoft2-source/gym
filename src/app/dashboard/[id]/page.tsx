@@ -37,8 +37,7 @@ type Application = {
   previous_gyms?: PrevGym[];
   job_type: string | null;
   preferred_shift: string | null;
-  expected_salary_min: number | null;
-  expected_salary_max: number | null;
+  expected_salary: number | null;
   available_from: string | null;
   available_timings?: string[];
   willing_to_relocate: boolean;
@@ -214,11 +213,7 @@ export default async function ApplicationDetail({
               <Row label="Preferred shift" value={app.preferred_shift} />
               <Row
                 label="Expected salary"
-                value={
-                  app.expected_salary_min || app.expected_salary_max
-                    ? `₹${app.expected_salary_min ?? "?"} - ₹${app.expected_salary_max ?? "?"}`
-                    : ""
-                }
+                value={app.expected_salary ? `₹${app.expected_salary}` : ""}
               />
               <Row label="Available timings" value={(app.available_timings ?? []).join(", ")} />
               <Row label="Available from" value={app.available_from} />

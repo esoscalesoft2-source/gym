@@ -80,8 +80,7 @@ const defaults: DefaultValues<ApplicationInput> = {
   previous_gyms: [],
   job_type: "",
   preferred_shift: "",
-  expected_salary_min: "",
-  expected_salary_max: "",
+  expected_salary: "",
   available_from: "",
   available_timings: [],
   willing_to_relocate: false,
@@ -182,17 +181,6 @@ export default function ApplyForm() {
         return false;
       }
       clearErrors("previous_gyms");
-    }
-
-    if (step === 2) {
-      const { expected_salary_min: min, expected_salary_max: max } = getValues();
-      if (min && max && Number(min) > Number(max)) {
-        setError("expected_salary_max", {
-          message: "Minimum salary is higher than the maximum",
-        });
-        return false;
-      }
-      clearErrors("expected_salary_max");
     }
 
     return true;
@@ -515,24 +503,14 @@ export default function ApplyForm() {
             />
           </Field>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Expected salary — min (₹)" error={errors.expected_salary_min?.message}>
-              <input
-                {...register("expected_salary_min")}
-                inputMode="numeric"
-                className={inputClass}
-                placeholder="18000"
-              />
-            </Field>
-            <Field label="Expected salary — max (₹)" error={errors.expected_salary_max?.message}>
-              <input
-                {...register("expected_salary_max")}
-                inputMode="numeric"
-                className={inputClass}
-                placeholder="25000"
-              />
-            </Field>
-          </div>
+          <Field label="Expected salary (₹)" error={errors.expected_salary?.message}>
+            <input
+              {...register("expected_salary")}
+              inputMode="numeric"
+              className={inputClass}
+              placeholder="20000"
+            />
+          </Field>
 
           {!isFullTime && (
             <Field

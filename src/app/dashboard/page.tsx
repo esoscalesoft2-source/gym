@@ -36,8 +36,7 @@ type Row = {
   specializations?: string[];
   status: string;
   created_at?: string;
-  expected_salary_min: number | null;
-  expected_salary_max: number | null;
+  expected_salary: number | null;
 };
 
 const safe = (s: string) => s.trim().slice(0, 40).toLowerCase();
@@ -51,9 +50,8 @@ function fmtDate(iso?: string) {
   });
 }
 
-function salaryRange(min: number | null, max: number | null) {
-  if (!min && !max) return "—";
-  return `₹${min ?? "?"} - ₹${max ?? "?"}`;
+function formatSalary(v: number | null) {
+  return v ? `₹${v}` : "—";
 }
 
 /**
@@ -324,9 +322,7 @@ export default async function DashboardPage({
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-muted">
-                        {salaryRange(r.expected_salary_min, r.expected_salary_max)}
-                      </td>
+                      <td className="px-4 py-3 text-muted">{formatSalary(r.expected_salary)}</td>
                       <td className="px-4 py-3 text-muted">{fmtDate(r.created_at)}</td>
                       <td className="px-4 py-3">
                         <span
@@ -380,8 +376,7 @@ export default async function DashboardPage({
                   </div>
 
                   <p className="mt-2.5 text-xs text-muted">
-                    {salaryRange(r.expected_salary_min, r.expected_salary_max)} · Applied{" "}
-                    {fmtDate(r.created_at)}
+                    {formatSalary(r.expected_salary)} · Applied {fmtDate(r.created_at)}
                   </p>
                 </Link>
               </li>
