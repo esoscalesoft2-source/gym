@@ -7,6 +7,7 @@ import { ownsGym } from "@/lib/firebase/owner";
 import { STATUSES, formatRef, statusMeta } from "@/lib/constants";
 import { currentUid } from "../../login/actions";
 import { updateApplication } from "../actions";
+import { SaveButton } from "./SaveButton";
 
 export const metadata = { title: "Application detail" };
 export const dynamic = "force-dynamic";
@@ -250,7 +251,11 @@ export default async function ApplicationDetail({
 
             <label className="block">
               <span className="eyebrow mb-2 block text-xs text-muted">Status</span>
+              {/* key forces a remount on save, so `defaultValue` re-applies — React
+                  otherwise leaves an uncontrolled element's DOM value alone across
+                  re-renders, even when the server data it was seeded from changes. */}
               <select
+                key={app.status}
                 name="status"
                 defaultValue={app.status}
                 className="w-full border border-line bg-surface-2 px-3 py-2.5 text-sm text-foreground outline-none focus:border-brand"
@@ -266,6 +271,7 @@ export default async function ApplicationDetail({
             <label className="mt-4 block">
               <span className="eyebrow mb-2 block text-xs text-muted">Notes</span>
               <textarea
+                key={app.owner_notes ?? ""}
                 name="owner_notes"
                 rows={5}
                 defaultValue={app.owner_notes ?? ""}
@@ -274,9 +280,7 @@ export default async function ApplicationDetail({
               />
             </label>
 
-            <button className="eyebrow mt-4 w-full bg-brand px-5 py-2.5 text-sm text-brand-ink transition hover:brightness-110">
-              Save
-            </button>
+            <SaveButton />
           </form>
 
           {(app.resume_path || certPaths.length > 0) && (
