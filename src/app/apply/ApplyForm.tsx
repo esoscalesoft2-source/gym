@@ -36,6 +36,32 @@ import {
 
 const STEPS = ["Your details", "Experience", "Job preference", "Last step"];
 
+const NO_CERTIFICATION = "No certification";
+
+/**
+ * "No certification" means none of the others apply, so it can never sit
+ * alongside a real one. Picking it clears everything else; picking anything
+ * else while it's active clears it.
+ */
+function resolveCertifications(
+  prev: string[] | undefined,
+  next: string[],
+): (typeof CERTIFICATIONS)[number][] {
+  const wasNone = (prev ?? []).includes(NO_CERTIFICATION);
+  const isNone = next.includes(NO_CERTIFICATION);
+
+  if (isNone && !wasNone) {
+    // "No certification" was just picked — it wins alone.
+    return [NO_CERTIFICATION];
+  }
+  if (isNone && wasNone && next.length > 1) {
+    // A real certification was just picked while "No certification" was still
+    // active (chips don't clear each other on their own) — drop it now.
+    return next.filter((c) => c !== NO_CERTIFICATION) as (typeof CERTIFICATIONS)[number][];
+  }
+  return next as (typeof CERTIFICATIONS)[number][];
+}
+
 const defaults: DefaultValues<ApplicationInput> = {
   full_name: "",
   phone: "",
@@ -330,7 +356,7 @@ export default function ApplyForm() {
                 <ChipGroup
                   options={CERTIFICATIONS}
                   value={field.value ?? []}
-                  onChange={field.onChange}
+                  onChange={(next) => field.onChange(resolveCertifications(field.value, next))}
                 />
               )}
             />
