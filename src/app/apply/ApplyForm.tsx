@@ -10,10 +10,12 @@ import { submitApplication } from "./actions";
 import {
   AVAILABLE_TIMINGS,
   CERTIFICATIONS,
+  EVENING_TIMINGS,
   GENDERS,
   JOB_TYPES,
   LANGUAGES,
   MAX_CERTIFICATES,
+  MORNING_TIMINGS,
   SHIFTS,
   SPECIALIZATIONS,
 } from "@/lib/constants";
@@ -78,6 +80,8 @@ const defaults: DefaultValues<ApplicationInput> = {
   previous_gyms: [],
   job_type: "",
   preferred_shift: "",
+  expected_salary_min: "",
+  expected_salary_max: "",
   available_from: "",
   available_timings: [],
   willing_to_relocate: false,
@@ -132,6 +136,28 @@ export default function ApplyForm() {
     }
   }, [isFullTime, setValue]);
 
+  // "Available timings" offers only the half of the day matching the chosen shift —
+  // Morning shift shows the morning slots, Evening shift shows the evening slots.
+  // "Both" (or nothing picked yet) shows the full list.
+  const watchPreferredShift = useWatch({ control, name: "preferred_shift" });
+  const timingOptions =
+    watchPreferredShift === "morning"
+      ? MORNING_TIMINGS
+      : watchPreferredShift === "evening"
+        ? EVENING_TIMINGS
+        : AVAILABLE_TIMINGS;
+
+  // Drop any previously picked slot that the new shift no longer offers, instead of
+  // wiping the whole selection — e.g. switching Both -> Morning keeps morning picks.
+  useEffect(() => {
+    const allowed = new Set<string>(timingOptions);
+    const current = getValues("available_timings") ?? [];
+    const kept = current.filter((t) => allowed.has(t));
+    if (kept.length !== current.length) {
+      setValue("available_timings", kept as typeof current);
+    }
+  }, [timingOptions, getValues, setValue]);
+
   /**
    * Cross-field rules live in a top-level zod `.refine()`, which zod skips while any
    * field is still invalid (`consent` is empty until the last step). So they never fire
@@ -156,6 +182,17 @@ export default function ApplyForm() {
         return false;
       }
       clearErrors("previous_gyms");
+    }
+
+    if (step === 2) {
+      const { expected_salary_min: min, expected_salary_max: max } = getValues();
+      if (min && max && Number(min) > Number(max)) {
+        setError("expected_salary_max", {
+          message: "Minimum salary is higher than the maximum",
+        });
+        return false;
+      }
+      clearErrors("expected_salary_max");
     }
 
     return true;
@@ -478,10 +515,35 @@ export default function ApplyForm() {
             />
           </Field>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Expected salary — min (₹)" error={errors.expected_salary_min?.message}>
+              <input
+                {...register("expected_salary_min")}
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="18000"
+              />
+            </Field>
+            <Field label="Expected salary — max (₹)" error={errors.expected_salary_max?.message}>
+              <input
+                {...register("expected_salary_max")}
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="25000"
+              />
+            </Field>
+          </div>
+
           {!isFullTime && (
             <Field
               label="Available timings"
-              hint="Select every slot you can take"
+              hint={
+                watchPreferredShift === "morning"
+                  ? "Showing morning slots — matches your preferred shift"
+                  : watchPreferredShift === "evening"
+                    ? "Showing evening slots — matches your preferred shift"
+                    : "Select every slot you can take"
+              }
               error={errors.available_timings?.message}
             >
               <Controller
@@ -489,7 +551,7 @@ export default function ApplyForm() {
                 name="available_timings"
                 render={({ field }) => (
                   <ChipGroup
-                    options={AVAILABLE_TIMINGS}
+                    options={timingOptions}
                     value={field.value ?? []}
                     onChange={field.onChange}
                   />

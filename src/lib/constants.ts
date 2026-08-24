@@ -37,6 +37,11 @@ export const AVAILABLE_TIMINGS = [
   "8 PM - 11 PM",
 ] as const;
 
+// First half of the day / second half of the day — which slots the "Available
+// timings" picker offers depends on the Morning/Evening shift picked above it.
+export const MORNING_TIMINGS = AVAILABLE_TIMINGS.slice(0, 3);
+export const EVENING_TIMINGS = AVAILABLE_TIMINGS.slice(3);
+
 export const LANGUAGES = ["Tamil", "English", "Hindi", "Telugu", "Malayalam", "Kannada"] as const;
 
 export const GENDERS = [

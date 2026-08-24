@@ -15,6 +15,14 @@ const optionalEnum = <T extends string>(values: readonly T[]) =>
     .default("")
     .refine((v) => v === "" || (values as readonly string[]).includes(v), "Invalid option");
 
+/** Optional whole number entered in a text/number input. */
+const optionalInt = (label: string, max = 10_000_000) =>
+  z
+    .string()
+    .trim()
+    .default("")
+    .refine((v) => v === "" || (/^\d+$/.test(v) && Number(v) <= max), `${label} is not valid`);
+
 const previousGym = z.object({
   gym: z.string().trim().max(120).default(""),
   role: z.string().trim().max(80).default(""),
@@ -60,6 +68,8 @@ export const applicationSchema = z
     // ---- Step 3: job preferences -----------------------------------------
     job_type: optionalEnum(["full_time", "part_time", "freelance"] as const),
     preferred_shift: optionalEnum(["morning", "evening", "both"] as const),
+    expected_salary_min: optionalInt("Salary"),
+    expected_salary_max: optionalInt("Salary"),
     available_from: optionalText(10),
     available_timings: z.array(z.enum(AVAILABLE_TIMINGS)).default([]),
     willing_to_relocate: z.boolean().default(false),
@@ -79,6 +89,13 @@ export const applicationSchema = z
     reference_contact: optionalText(120),
     consent: z.literal(true, { message: "Please accept the terms" }),
   })
+  .refine(
+    (d) =>
+      d.expected_salary_min === "" ||
+      d.expected_salary_max === "" ||
+      Number(d.expected_salary_min) <= Number(d.expected_salary_max),
+    { message: "Minimum salary is higher than the maximum", path: ["expected_salary_max"] },
+  )
   .refine((d) => !d.certifications.includes("Other") || d.certification_other.trim() !== "", {
     message: "Enter your certification",
     path: ["certification_other"],
@@ -108,6 +125,14 @@ export type UploadPaths = z.infer<typeof uploadPathsSchema>;
 export const STEP_FIELDS = [
   ["full_name", "phone", "email", "gender", "dob", "city", "address", "languages"],
   ["experience_years", "specializations", "certifications", "certification_other", "previous_gyms"],
-  ["job_type", "preferred_shift", "available_from", "available_timings", "willing_to_relocate"],
+  [
+    "job_type",
+    "preferred_shift",
+    "expected_salary_min",
+    "expected_salary_max",
+    "available_from",
+    "available_timings",
+    "willing_to_relocate",
+  ],
   ["bio", "instagram_url", "youtube_url", "reference_contact", "consent"],
 ] as const satisfies readonly (readonly (keyof ApplicationInput)[])[];
