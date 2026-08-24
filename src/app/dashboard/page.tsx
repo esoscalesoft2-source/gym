@@ -36,8 +36,6 @@ type Row = {
   specializations?: string[];
   status: string;
   created_at?: string;
-  expected_salary_min: number | null;
-  expected_salary_max: number | null;
 };
 
 const safe = (s: string) => s.trim().slice(0, 40).toLowerCase();
@@ -49,11 +47,6 @@ function fmtDate(iso?: string) {
     month: "short",
     year: "numeric",
   });
-}
-
-function salaryRange(min: number | null, max: number | null) {
-  if (!min && !max) return "—";
-  return `₹${min ?? "?"} - ₹${max ?? "?"}`;
 }
 
 /**
@@ -285,7 +278,6 @@ export default async function DashboardPage({
                   <th className="px-4 py-3 font-semibold">City</th>
                   <th className="px-4 py-3 font-semibold">Exp</th>
                   <th className="px-4 py-3 font-semibold">Specializations</th>
-                  <th className="px-4 py-3 font-semibold">Expected</th>
                   <th className="px-4 py-3 font-semibold">Applied</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                 </tr>
@@ -323,9 +315,6 @@ export default async function DashboardPage({
                             </span>
                           ))}
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-muted">
-                        {salaryRange(r.expected_salary_min, r.expected_salary_max)}
                       </td>
                       <td className="px-4 py-3 text-muted">{fmtDate(r.created_at)}</td>
                       <td className="px-4 py-3">
@@ -379,10 +368,7 @@ export default async function DashboardPage({
                     ))}
                   </div>
 
-                  <p className="mt-2.5 text-xs text-muted">
-                    {salaryRange(r.expected_salary_min, r.expected_salary_max)} · Applied{" "}
-                    {fmtDate(r.created_at)}
-                  </p>
+                  <p className="mt-2.5 text-xs text-muted">Applied {fmtDate(r.created_at)}</p>
                 </Link>
               </li>
             );

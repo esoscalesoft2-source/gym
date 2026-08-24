@@ -78,8 +78,6 @@ const defaults: DefaultValues<ApplicationInput> = {
   previous_gyms: [],
   job_type: "",
   preferred_shift: "",
-  expected_salary_min: "",
-  expected_salary_max: "",
   available_from: "",
   available_timings: [],
   willing_to_relocate: false,
@@ -109,6 +107,7 @@ export default function ApplyForm() {
     getValues,
     setError,
     clearErrors,
+    setValue,
     formState: { errors },
   } = useForm<ApplicationInput, unknown, ApplicationValues>({
     resolver: zodResolver(applicationSchema),
@@ -120,6 +119,18 @@ export default function ApplyForm() {
   const watchCertifications = useWatch({ control, name: "certifications" });
   const watchExperience = useWatch({ control, name: "experience_years" });
   const experienceRequiresGym = Number(watchExperience) >= 1;
+
+  const watchJobType = useWatch({ control, name: "job_type" });
+  const isFullTime = watchJobType === "full_time";
+
+  // Full-time is assumed to cover the whole day, so shift/timing choices below don't
+  // apply — force "Both" and clear any picked slots the moment full-time is chosen.
+  useEffect(() => {
+    if (isFullTime) {
+      setValue("preferred_shift", "both");
+      setValue("available_timings", []);
+    }
+  }, [isFullTime, setValue]);
 
   /**
    * Cross-field rules live in a top-level zod `.refine()`, which zod skips while any
@@ -145,17 +156,6 @@ export default function ApplyForm() {
         return false;
       }
       clearErrors("previous_gyms");
-    }
-
-    if (step === 2) {
-      const { expected_salary_min: min, expected_salary_max: max } = getValues();
-      if (min && max && Number(min) > Number(max)) {
-        setError("expected_salary_max", {
-          message: "Minimum salary is higher than the maximum",
-        });
-        return false;
-      }
-      clearErrors("expected_salary_max");
     }
 
     return true;
@@ -458,7 +458,11 @@ export default function ApplyForm() {
             />
           </Field>
 
-          <Field label="Preferred shift" error={errors.preferred_shift?.message}>
+          <Field
+            label="Preferred shift"
+            hint={isFullTime ? "Full time covers the whole day" : undefined}
+            error={errors.preferred_shift?.message}
+          >
             <Controller
               control={control}
               name="preferred_shift"
@@ -468,47 +472,31 @@ export default function ApplyForm() {
                   options={SHIFTS}
                   value={field.value ?? ""}
                   onChange={field.onChange}
+                  disabledOptions={isFullTime ? (["morning", "evening"] as const) : undefined}
                 />
               )}
             />
           </Field>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Expected salary — min (₹)" error={errors.expected_salary_min?.message}>
-              <input
-                {...register("expected_salary_min")}
-                inputMode="numeric"
-                className={inputClass}
-                placeholder="18000"
+          {!isFullTime && (
+            <Field
+              label="Available timings"
+              hint="Select every slot you can take"
+              error={errors.available_timings?.message}
+            >
+              <Controller
+                control={control}
+                name="available_timings"
+                render={({ field }) => (
+                  <ChipGroup
+                    options={AVAILABLE_TIMINGS}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                  />
+                )}
               />
             </Field>
-            <Field label="Expected salary — max (₹)" error={errors.expected_salary_max?.message}>
-              <input
-                {...register("expected_salary_max")}
-                inputMode="numeric"
-                className={inputClass}
-                placeholder="25000"
-              />
-            </Field>
-          </div>
-
-          <Field
-            label="Available timings"
-            hint="Select every slot you can take"
-            error={errors.available_timings?.message}
-          >
-            <Controller
-              control={control}
-              name="available_timings"
-              render={({ field }) => (
-                <ChipGroup
-                  options={AVAILABLE_TIMINGS}
-                  value={field.value ?? []}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-          </Field>
+          )}
 
           <Field label="Available from" error={errors.available_from?.message}>
             <input {...register("available_from")} type="date" className={inputClass} />

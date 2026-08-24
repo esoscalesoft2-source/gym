@@ -81,31 +81,40 @@ export function RadioRow<T extends string>({
   value,
   onChange,
   name,
+  disabledOptions,
 }: {
   options: readonly { value: T; label: string }[];
   value: string;
   onChange: (next: T) => void;
   name: string;
+  /** Options to grey out and make non-interactive, e.g. when another field's value rules them out. */
+  disabledOptions?: readonly T[];
 }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          name={name}
-          onClick={() => onChange(opt.value)}
-          aria-pressed={value === opt.value}
-          className={
-            "inline-flex min-h-11 items-center border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition " +
-            (value === opt.value
-              ? "border-brand bg-brand text-brand-ink"
-              : "border-line bg-surface text-muted hover:border-muted hover:text-foreground")
-          }
-        >
-          {opt.label}
-        </button>
-      ))}
+      {options.map((opt) => {
+        const isDisabled = disabledOptions?.includes(opt.value) ?? false;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            name={name}
+            disabled={isDisabled}
+            onClick={() => onChange(opt.value)}
+            aria-pressed={value === opt.value}
+            className={
+              "inline-flex min-h-11 items-center border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition " +
+              (isDisabled
+                ? "cursor-not-allowed border-line/60 bg-surface/60 text-muted/40"
+                : value === opt.value
+                  ? "border-brand bg-brand text-brand-ink"
+                  : "border-line bg-surface text-muted hover:border-muted hover:text-foreground")
+            }
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

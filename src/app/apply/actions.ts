@@ -10,7 +10,6 @@ import { applicationSchema, uploadPathsSchema } from "@/lib/validation";
 export type SubmitResult = { ok: true; ref: number } | { ok: false; message: string };
 
 const emptyToNull = (v: string) => (v.trim() === "" ? null : v.trim());
-const numOrNull = (v: string) => (v.trim() === "" ? null : Number(v));
 
 export async function submitApplication(raw: unknown, rawPaths: unknown): Promise<SubmitResult> {
   const gymId = process.env.NEXT_PUBLIC_GYM_ID;
@@ -88,8 +87,6 @@ export async function submitApplication(raw: unknown, rawPaths: unknown): Promis
 
       job_type: emptyToNull(d.job_type),
       preferred_shift: emptyToNull(d.preferred_shift),
-      expected_salary_min: numOrNull(d.expected_salary_min),
-      expected_salary_max: numOrNull(d.expected_salary_max),
       available_from: emptyToNull(d.available_from),
       available_timings: d.available_timings,
       willing_to_relocate: d.willing_to_relocate,
