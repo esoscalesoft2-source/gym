@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Controller, useFieldArray, useForm, type DefaultValues } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch, type DefaultValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { submitApplication } from "./actions";
@@ -48,6 +48,7 @@ const defaults: DefaultValues<ApplicationInput> = {
   experience_years: "",
   specializations: [],
   certifications: [],
+  certification_other: "",
   previous_gyms: [],
   job_type: "",
   preferred_shift: "",
@@ -90,6 +91,7 @@ export default function ApplyForm() {
   });
 
   const gyms = useFieldArray({ control, name: "previous_gyms" });
+  const watchCertifications = useWatch({ control, name: "certifications" });
 
   /**
    * Cross-field rules live in a top-level zod `.refine()`, which zod skips while any
@@ -98,15 +100,26 @@ export default function ApplyForm() {
    * at submit time.
    */
   const checkStepExtras = () => {
-    if (step !== 2) return true;
-    const { expected_salary_min: min, expected_salary_max: max } = getValues();
-    if (min && max && Number(min) > Number(max)) {
-      setError("expected_salary_max", {
-        message: "Minimum salary is higher than the maximum",
-      });
-      return false;
+    if (step === 1) {
+      const { certifications, certification_other } = getValues();
+      if (certifications?.includes("Other") && !certification_other?.trim()) {
+        setError("certification_other", { message: "Enter your certification" });
+        return false;
+      }
+      clearErrors("certification_other");
     }
-    clearErrors("expected_salary_max");
+
+    if (step === 2) {
+      const { expected_salary_min: min, expected_salary_max: max } = getValues();
+      if (min && max && Number(min) > Number(max)) {
+        setError("expected_salary_max", {
+          message: "Minimum salary is higher than the maximum",
+        });
+        return false;
+      }
+      clearErrors("expected_salary_max");
+    }
+
     return true;
   };
 
@@ -310,6 +323,21 @@ export default function ApplyForm() {
               )}
             />
           </Field>
+
+          {watchCertifications?.includes("Other") && (
+            <Field
+              label="Which certification?"
+              required
+              error={errors.certification_other?.message}
+            >
+              <input
+                {...register("certification_other")}
+                className={inputClass}
+                placeholder="e.g. CrossFit Level 1"
+                autoFocus
+              />
+            </Field>
+          )}
 
           <div>
             <span className="eyebrow mb-2 block text-xs text-muted">

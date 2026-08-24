@@ -68,7 +68,11 @@ export async function submitApplication(raw: unknown, rawPaths: unknown): Promis
 
     experience_years: Number(d.experience_years),
     specializations: d.specializations,
-    certifications: d.certifications,
+    // Firestore has no enum constraint, so swap the generic "Other" chip for what the
+    // applicant actually typed — the dashboard just joins this array for display.
+    certifications: d.certifications.map((c) =>
+      c === "Other" && d.certification_other.trim() ? `Other: ${d.certification_other.trim()}` : c,
+    ),
     certificate_paths: paths.data.certificate_paths,
     resume_path: emptyToNull(paths.data.resume_path),
     previous_gyms: d.previous_gyms.filter((g) => g.gym.trim() !== ""),

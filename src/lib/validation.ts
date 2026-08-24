@@ -59,6 +59,10 @@ export const applicationSchema = z
       .array(z.enum(SPECIALIZATIONS))
       .min(1, "Select at least one specialization"),
     certifications: z.array(z.enum(CERTIFICATIONS)).default([]),
+    // Free text shown only when "Other" is checked above; required in that case
+    // (enforced below, since a top-level .refine() is skipped while any other
+    // field — namely `consent` — is still invalid).
+    certification_other: optionalText(60),
     previous_gyms: z.array(previousGym).max(5).default([]),
 
     // ---- Step 3: job preferences -----------------------------------------
@@ -91,7 +95,11 @@ export const applicationSchema = z
       d.expected_salary_max === "" ||
       Number(d.expected_salary_min) <= Number(d.expected_salary_max),
     { message: "Minimum salary is higher than the maximum", path: ["expected_salary_max"] },
-  );
+  )
+  .refine((d) => !d.certifications.includes("Other") || d.certification_other.trim() !== "", {
+    message: "Enter your certification",
+    path: ["certification_other"],
+  });
 
 export type ApplicationInput = z.input<typeof applicationSchema>;
 export type ApplicationValues = z.output<typeof applicationSchema>;
@@ -108,7 +116,7 @@ export type UploadPaths = z.infer<typeof uploadPathsSchema>;
 /** Fields validated when the user presses "Next" on each step. */
 export const STEP_FIELDS = [
   ["full_name", "phone", "email", "gender", "dob", "city", "address", "languages"],
-  ["experience_years", "specializations", "certifications", "previous_gyms"],
+  ["experience_years", "specializations", "certifications", "certification_other", "previous_gyms"],
   [
     "job_type",
     "preferred_shift",
